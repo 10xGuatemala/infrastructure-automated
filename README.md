@@ -2,7 +2,7 @@
 Repository for scripts and tools aimed at automating and managing infrastructure in cloud and local environments. Streamlining deployment, maintenance, and scalability of technological solutions.
 
 ## WordPress Automated Script
-Source: https://github.com/SolucionesModernas10X/infrastructure-automated/diezx-deb-lemp-wp.sh
+Script: diezx-deb-lemp-wp.sh
 
 ### Description
 
