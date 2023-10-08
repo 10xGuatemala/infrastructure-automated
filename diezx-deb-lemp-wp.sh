@@ -223,6 +223,12 @@ server {
     return 404;
   }
 
+  # Restrict the read access of user info of WordPress.
+    location ~ ^/wp-json/wp/v2/users {
+        deny all;
+        return 403;
+    }
+
   location ~ \.php$ {
     try_files \$uri =404;
     fastcgi_index index.php;
