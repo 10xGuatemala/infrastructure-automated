@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2023 - Soluciones Modernas DiezX
+# Copyright 2023 - 10X de Guatemala, S.A.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,9 +15,10 @@
 # limitations under the License.
 #
 # Author: Miguel E. Guerra Connor (miguelguerra@10x.gt)
-# Creation Date: 1 Oct 2023
-# Last Modification: 1 Oct 2023
-# Version: 1.0.0
+# Creation Date: Oct 1, 2023
+# Last Modification: Apr 13, 2024
+# Version: 1.1.0
+#
 # Made in Guatemala ;)
 #
 # A script to automate the installation of WordPress on Debian systems with LEMP.
@@ -138,9 +139,35 @@ done
 echo "Updating the system..."
 sudo apt-get update -y && sudo apt-get upgrade -y
 
-# Install necessary packages
+# Packages to install
+packages=(
+    nginx
+    mariadb-server
+    php
+    php-fpm
+    php-gd
+    php-curl
+    php-cli
+    php-zip
+    php-mysql
+    php-xml
+    certbot
+    python3-certbot-nginx
+)
+
 echo "Installing necessary packages..."
-sudo apt-get install -y nginx mariadb-server php php-fpm php-gd php-curl php-cli php-zip php-mysql php-xml certbot python3-certbot-nginx
+
+# Instalar cada paquete si no está ya instalado
+for pkg in "${packages[@]}"; do
+    if ! dpkg -l | grep -qw "$pkg"; then
+        echo "Installing $pkg..."
+        sudo apt-get install -y "$pkg"
+    else
+        echo "$pkg is already installed."
+    fi
+done
+
+echo "All necessary packages have been installed or were already present."
 
 # Set the locale and timezone
 echo "Setting locale to ${parameters[locale]} and timezone to ${parameters[timezone]}..."
@@ -253,22 +280,50 @@ sudo mysql -uroot -p${parameters[mysql_root_password]} -e "DELETE FROM mysql.use
 sudo mysql -uroot -p${parameters[mysql_root_password]} -e "DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';"
 sudo mysql -uroot -p${parameters[mysql_root_password]} -e "FLUSH PRIVILEGES;"
 
-# Create the database and connection user
-echo "Creating database and connection user..."
-sudo mysql -uroot -p${parameters[mysql_root_password]} -e "CREATE DATABASE ${parameters[db_name]}; CREATE USER '${parameters[db_user]}'@'localhost' IDENTIFIED BY '${parameters[db_password]}'; GRANT ALL PRIVILEGES ON ${parameters[db_name]}.* TO '${parameters[db_user]}'@'localhost';"
+# MySQL parameters and WP-CLI installation details from the parameters array
+mysql_root_password=${parameters[mysql_root_password]}
+db_name=${parameters[db_name]}
+db_user=${parameters[db_user]}
+db_password=${parameters[db_password]}
+domain=${parameters[domain]}
+wp_title=${parameters[wp_title]}
+wp_admin=${parameters[wp_admin]}
+wp_password=${parameters[wp_password]}
+wp_email=${parameters[wp_email]}
 
-# Install WP-CLI
-echo "Installing WP-CLI..."
-curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
-chmod +x wp-cli.phar
-sudo mv wp-cli.phar /usr/local/bin/wp
+# Create the database if it doesn't exist
+echo "Checking and creating database if it doesn't exist..."
+sudo mysql -uroot -p"$mysql_root_password" -e "CREATE DATABASE IF NOT EXISTS $db_name;"
 
-echo "Installing WordPress..."
+# Create MySQL user if it doesn't exist
+echo "Creating MySQL user if not exists..."
+sudo mysql -uroot -p"$mysql_root_password" -e "CREATE USER IF NOT EXISTS '$db_user'@'localhost' IDENTIFIED BY '$db_password'; GRANT ALL PRIVILEGES ON $db_name.* TO '$db_user'@'localhost'; FLUSH PRIVILEGES;"
+
+# Install WP-CLI if it is not already installed
+echo "Installing WP-CLI if not already installed..."
+if ! command -v wp > /dev/null; then
+    curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+    chmod +x wp-cli.phar
+    sudo mv wp-cli.phar /usr/local/bin/wp
+else
+    echo "WP-CLI is already installed."
+fi
+
+# Setting ownership to the www-data user
+echo "Setting ownership to www-data user..."
 sudo chown -R www-data:www-data /var/www
-sudo -u www-data -- wp core download --path=/var/www/html
-sudo -u www-data -- wp core config --debug --path=/var/www/html --dbname=${parameters[db_name]} --dbuser=${parameters[db_user]} --dbpass=${parameters[db_password]} --dbhost=localhost
-sudo -u www-data -- wp core install --debug --path=/var/www/html --url=${parameters[domain]} --title="${parameters[wp_title]}" --admin_user=${parameters[wp_admin]} --admin_password=${parameters[wp_password]} --admin_email=${parameters[wp_email]}
-echo "WordPress installation completed successfully!"
+
+# Install WordPress if not already installed
+echo "Installing WordPress if not already present..."
+if ! sudo -u www-data -- wp core is-installed --path=/var/www/html; then
+    sudo -u www-data -- wp core download --path=/var/www/html
+    sudo -u www-data -- wp core config --debug --path=/var/www/html --dbname="$db_name" --dbuser="$db_user" --dbpass="$db_password" --dbhost=localhost
+    sudo -u www-data -- wp core install --debug --path=/var/www/html --url="$domain" --title="$wp_title" --admin_user="$wp_admin" --admin_password="$wp_password" --admin_email="$wp_email"
+    echo "WordPress installation completed successfully!"
+else
+    echo "WordPress is already installed."
+fi
+
 
 # Print installed software and versions
 echo "Installation completed. Installed software and versions:"
