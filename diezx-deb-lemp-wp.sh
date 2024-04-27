@@ -171,6 +171,9 @@ echo "All necessary packages have been installed or were already present."
 
 # Set the locale and timezone
 echo "Setting locale to ${parameters[locale]} and timezone to ${parameters[timezone]}..."
+# Ensure the locale is uncommented in /etc/locale.gen if it is commented
+sudo sed -i "/^#.*${parameters[locale]}/s/^#//" /etc/locale.gen
+# Set the locale and timezone
 sudo locale-gen ${parameters[locale]}
 sudo update-locale LANG=${parameters[locale]}
 sudo timedatectl set-timezone ${parameters[timezone]}
