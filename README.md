@@ -35,8 +35,10 @@ Before executing the script, users can check available locales and timezones wit
 
 **Timezones**:
 - Command: `timedatectl list-timezones`
+- [Timezones Mappings](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)
 
 ### Usage
+```bash
 ./diezx-deb-lemp-wp.sh \
      --domain="example.com" \
      --mysql_root_password="RootPass123" \
@@ -53,7 +55,7 @@ Before executing the script, users can check available locales and timezones wit
      --sudo_password="SudoPass123" \
      --disable_root="yes" \
      --ssh_key="ssh-rsa AAAA...xyz user@host"
-
+```
 ## Logs
 To gain insights into the script's execution, you can review the log at: `/var/log/diezx-deb-lemp-wp.log`.
 
